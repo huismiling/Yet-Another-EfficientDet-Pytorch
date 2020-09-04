@@ -329,8 +329,9 @@ class Regressor(nn.Module):
                 feat = self.swish(feat)
             feat = self.header(feat)
 
+            feat_shape = feat.cpu().detach().numpy().shape
             feat = feat.permute(0, 2, 3, 1)
-            feat = feat.contiguous().view(feat.shape[0], -1, 4)
+            feat = feat.flatten().view(feat_shape[0], -1, 4)
 
             feats.append(feat)
 
@@ -367,9 +368,10 @@ class Classifier(nn.Module):
             feat = self.header(feat)
 
             feat = feat.permute(0, 2, 3, 1)
-            feat = feat.contiguous().view(feat.shape[0], feat.shape[1], feat.shape[2], self.num_anchors,
-                                          self.num_classes)
-            feat = feat.contiguous().view(feat.shape[0], -1, self.num_classes)
+            #feat = feat.flatten().view(feat.shape[0], feat.shape[1], feat.shape[2], self.num_anchors,
+            #                              self.num_classes)
+            feat_shape = feat.cpu().detach().numpy().shape
+            feat = feat.flatten().view(feat_shape[0], -1, self.num_classes)
 
             feats.append(feat)
 

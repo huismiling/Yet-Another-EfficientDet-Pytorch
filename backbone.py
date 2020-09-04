@@ -10,7 +10,7 @@ from efficientdet.utils import Anchors
 
 
 class EfficientDetBackbone(nn.Module):
-    def __init__(self, num_classes=80, compound_coef=0, load_weights=False, **kwargs):
+    def __init__(self, num_classes=80, compound_coef=0, load_weights=False, onnx_export=False, **kwargs):
         super(EfficientDetBackbone, self).__init__()
         self.compound_coef = compound_coef
 
@@ -39,19 +39,18 @@ class EfficientDetBackbone(nn.Module):
         self.bifpn = nn.Sequential(
             *[BiFPN(self.fpn_num_filters[self.compound_coef],
                     conv_channel_coef[compound_coef],
-                    True if _ == 0 else False,
+                    True if _ == 0 else False, onnx_export=onnx_export,
                     attention=True if compound_coef < 6 else False)
               for _ in range(self.fpn_cell_repeats[compound_coef])])
 
         self.num_classes = num_classes
         self.regressor = Regressor(in_channels=self.fpn_num_filters[self.compound_coef], num_anchors=num_anchors,
-                                   num_layers=self.box_class_repeats[self.compound_coef])
+                                   num_layers=self.box_class_repeats[self.compound_coef], onnx_export=onnx_export)
         self.classifier = Classifier(in_channels=self.fpn_num_filters[self.compound_coef], num_anchors=num_anchors,
                                      num_classes=num_classes,
-                                     num_layers=self.box_class_repeats[self.compound_coef])
+                                     num_layers=self.box_class_repeats[self.compound_coef], onnx_export=onnx_export)
 
         self.anchors = Anchors(anchor_scale=self.anchor_scale[compound_coef], **kwargs)
-
         self.backbone_net = EfficientNet(self.backbone_compound_coef[compound_coef], load_weights)
 
     def freeze_bn(self):
@@ -69,9 +68,14 @@ class EfficientDetBackbone(nn.Module):
 
         regression = self.regressor(features)
         classification = self.classifier(features)
-        anchors = self.anchors(inputs, inputs.dtype)
 
-        return features, regression, classification, anchors
+        # if you just want to convert to onnx, you can cancel the two lines of comments
+        # or, if you want convert to tvm, just return regression and classification
+        
+        #anchors = self.anchors(inputs, inputs.dtype)
+        #return features, regression, classification, anchors
+        
+        return regression, classification
 
     def init_backbone(self, path):
         state_dict = torch.load(path)
