@@ -26,10 +26,12 @@ anchor_scales = [2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)]
 threshold = 0.2
 iou_threshold = 0.2
 
-use_cuda = True
+use_cuda = False #True
 use_float16 = False
 cudnn.fastest = True
 cudnn.benchmark = True
+
+export_onnx = False #True
 
 obj_list = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
             'fire hydrant', '', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
@@ -69,6 +71,11 @@ if use_float16:
 
 with torch.no_grad():
     features, regression, classification, anchors = model(x)
+
+    if export_onnx:
+        input_names = []
+        output_names = []
+        torch.onnx.export(model, x, "efficientdet.onnx", verbose=True, input_names=input_names, output_names=output_names)
 
     regressBoxes = BBoxTransform()
     clipBoxes = ClipBoxes()
