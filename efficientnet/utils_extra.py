@@ -30,23 +30,26 @@ class Conv2dStaticSamePadding(nn.Module):
         elif len(self.kernel_size) == 1:
             self.kernel_size = [self.kernel_size[0]] * 2
 
+        self.padd_inited = False
+
     def forward(self, x):
-        # h, w = x.shape[-2:]
-        h, w = x.cpu().detach().numpy().shape[-2:]
-        h_step = math.ceil(w / self.stride[1])
-        v_step = math.ceil(h / self.stride[0])
-        h_cover_len = self.stride[1] * (h_step - 1) + 1 + (self.kernel_size[1] - 1)
-        v_cover_len = self.stride[0] * (v_step - 1) + 1 + (self.kernel_size[0] - 1)
+        if not self.padd_inited:
+            # h, w = x.shape[-2:]
+            h, w = x.cpu().detach().numpy().shape[-2:]
+            h_step = math.ceil(w / self.stride[1])
+            v_step = math.ceil(h / self.stride[0])
+            h_cover_len = self.stride[1] * (h_step - 1) + 1 + (self.kernel_size[1] - 1)
+            v_cover_len = self.stride[0] * (v_step - 1) + 1 + (self.kernel_size[0] - 1)
 
-        extra_h = h_cover_len - w
-        extra_v = v_cover_len - h
+            extra_h = h_cover_len - w
+            extra_v = v_cover_len - h
 
-        left = extra_h // 2
-        right = extra_h - left
-        top = extra_v // 2
-        bottom = extra_v - top
+            self.left = extra_h // 2
+            self.right = extra_h - self.left
+            self.top = extra_v // 2
+            self.bottom = extra_v - self.top
 
-        x = F.pad(x, [left, right, top, bottom])
+        x = F.pad(x, [self.left, self.right, self.top, self.bottom])
 
         x = self.conv(x)
         return x
@@ -73,25 +76,28 @@ class MaxPool2dStaticSamePadding(nn.Module):
             self.kernel_size = [self.kernel_size] * 2
         elif len(self.kernel_size) == 1:
             self.kernel_size = [self.kernel_size[0]] * 2
+        
+        self.padd_inited = False
 
     def forward(self, x):
-        # h, w = x.shape[-2:]
-        h, w = x.cpu().detach().numpy().shape[-2:]
+        if not self.padd_inited:
+            # h, w = x.shape[-2:]
+            h, w = x.cpu().detach().numpy().shape[-2:]
 
-        h_step = math.ceil(w / self.stride[1])
-        v_step = math.ceil(h / self.stride[0])
-        h_cover_len = self.stride[1] * (h_step - 1) + 1 + (self.kernel_size[1] - 1)
-        v_cover_len = self.stride[0] * (v_step - 1) + 1 + (self.kernel_size[0] - 1)
+            h_step = math.ceil(w / self.stride[1])
+            v_step = math.ceil(h / self.stride[0])
+            h_cover_len = self.stride[1] * (h_step - 1) + 1 + (self.kernel_size[1] - 1)
+            v_cover_len = self.stride[0] * (v_step - 1) + 1 + (self.kernel_size[0] - 1)
 
-        extra_h = h_cover_len - w
-        extra_v = v_cover_len - h
+            extra_h = h_cover_len - w
+            extra_v = v_cover_len - h
 
-        left = extra_h // 2
-        right = extra_h - left
-        top = extra_v // 2
-        bottom = extra_v - top
+            self.left = extra_h // 2
+            self.right = extra_h - self.left
+            self.top = extra_v // 2
+            self.bottom = extra_v - self.top
 
-        x = F.pad(x, [left, right, top, bottom])
+        x = F.pad(x, [self.left, self.right, self.top, self.bottom])
 
         x = self.pool(x)
         return x

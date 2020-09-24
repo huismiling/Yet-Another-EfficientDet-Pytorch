@@ -23,6 +23,9 @@ dummy_input = torch.randn((1,3,512,512), dtype=torch.float32).to(device)
 
 model.load_state_dict(torch.load(f'weights/efficientdet-d0.pth'))
 
+model.eval()
+model(dummy_input)
+
 # opset_version can be changed to 10 or other number, based on your need
 torch.onnx.export(model, dummy_input,
                   'convert/efficientdet-d0.onnx',
